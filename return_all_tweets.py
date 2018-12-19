@@ -54,9 +54,32 @@ class all_tweets(Resource):
             return more_than_x_tweets
 
 
+class get_by_hashtag(Resource):
+    def get_by_hastag(self,hashtag):
+        #for each document if hashtag passed via URL is in it then add it to the list
+        have_hashtag = list()
+
+        cursor = collection.find({})
+
+        for document in cursor:
+
+            document['_id'] = str(document['_id'])
+            document['created_at'] = str(document['created_at'])
+            document_hashtags = document['entities']['hashtags']
+
+            # Append all documents that hashtags > x to the list.
+            for included_hashtag in document_hashtags:
+                if (included_hashtag==hashtag):
+                    have_hashtag.append(document)
+
+        return have_hashtag
+
+
 
 api.add_resource(all_tweets, '/tweets')
-#api.add_resource(more_than_tweets, '/tweets')
+api.add_resource(get_by_hashtag, '/tweets/hashtag/<string:hashtag>')
+
 
 if __name__ == '__main__':
     app.run(debug=True)
+
