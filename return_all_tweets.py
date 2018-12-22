@@ -22,13 +22,31 @@ for document in cursor:
 
 
 from flask import Flask
+from flask import render_template
 from flask_restful import Resource, Api
+from flask_restful import abort
 
 app = Flask(__name__)
 api = Api(app)
 
-class all_tweets(Resource):
+class getTweets(Resource):
     def get(self):
+        args = request.args
+        #print(args)
+        #if parameter isn't morethan
+        for arg in args:
+            if(arg!='morethan'):
+                #return json text "Bad request"
+                return abort(400)
+            else:
+                #if value int
+                try:
+                    int(args[arg])
+                #if value not int
+                except ValueError:
+                    abort(400)
+
+
         x = request.args.get('morethan', default=-1, type=int)
         #if no parameters (i.e x=-1 by default) then return all tweets(documents)
         if(x == -1):
@@ -54,8 +72,9 @@ class all_tweets(Resource):
             return more_than_x_tweets
 
 
-class get_by_hashtag(Resource):
-    def get_by_hastag(self,hashtag):
+class ByHashtag(Resource):
+    def get(self,hashtag):
+        print(hashtag)
         #for each document if hashtag passed via URL is in it then add it to the list
         have_hashtag = list()
 
@@ -67,19 +86,49 @@ class get_by_hashtag(Resource):
             document['created_at'] = str(document['created_at'])
             document_hashtags = document['entities']['hashtags']
 
-            # Append all documents that hashtags > x to the list.
+            # Append all documents to the list that include this hashtag.
             for included_hashtag in document_hashtags:
-                if (included_hashtag==hashtag):
+                if (included_hashtag['text']==hashtag):
                     have_hashtag.append(document)
 
         return have_hashtag
 
+    def delete(self, hashtag):
+        hashtagToDelete = hashtag
+        cursor = collection.find({})
+        #number of deleted tweets
+        n_of_deleted = 0
+        print(hashtagToDelete)
 
 
-api.add_resource(all_tweets, '/tweets')
-api.add_resource(get_by_hashtag, '/tweets/hashtag/<string:hashtag>')
+        #hashtags = document['entities']['hashtags' : {"$all":[hashtagToDelete]}]
+        #query =
+        #n_of_deleted = collection.find( { "entities":{"hashtags":{"text":hashtagToDelete}}})
+        #n_of_deleted = collection.find( { "entities":{"hashtags":{ "$elemMatch": {"text":hashtagToDelete}}}})
+        #docsToDelete = [doc for doc in n_of_deleted]
+        cursor = collection.find({})
+        #ids = list()
+
+        for doc in cursor:
+            hashtags = doc['entities']['hashtags']
+            for each in hashtags:
+                if each ['text'] == hashtagToDelete:
+                    n_of_deleted+=1
+                    doc_id = doc['id']
+                    #ids.append(doc_id)
+                    collection.remove({'id':doc_id})
+
+        return {'removedCount':n_of_deleted}
+
+
+
+
+
+api.add_resource(getTweets, '/tweets')
+api.add_resource(ByHashtag, '/tweets/hashtag/<string:hashtag>')
 
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
