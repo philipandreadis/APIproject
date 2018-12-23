@@ -1,5 +1,6 @@
 import pymongo
 from flask import Flask, request
+import json
 
 client = pymongo.MongoClient('localhost', 27017)
 db = client['tweets']
@@ -31,6 +32,7 @@ api = Api(app)
 
 class getTweets(Resource):
     def get(self):
+
         args = request.args
         #print(args)
         #if parameter isn't morethan
@@ -50,7 +52,11 @@ class getTweets(Resource):
         x = request.args.get('morethan', default=-1, type=int)
         #if no parameters (i.e x=-1 by default) then return all tweets(documents)
         if(x == -1):
-            return all_documents
+            parsed = json.dumps(all_documents)
+            if isinstance(parsed, str):
+                print("STR")
+
+            return parsed
 
         #if x != -1 return all tweets where num_of_hashtags > x
         else:
@@ -129,6 +135,8 @@ api.add_resource(ByHashtag, '/tweets/hashtag/<string:hashtag>')
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True,host='0.0.0.0', port=5110)
+
+
 
 
